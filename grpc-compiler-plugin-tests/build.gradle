@@ -12,25 +12,22 @@ def ballerinaDist = "${buildDir}/target/ballerina-distribution"
 
 dependencies {
     checkstyle project(':build-config:checkstyle')
-    checkstyle "com.puppycrawl.tools:checkstyle:${checkstyleToolVersion}"
+    checkstyle "com.puppycrawl.tools:checkstyle:${puppycrawlCheckstyleVersion}"
 
     testImplementation group: 'org.ballerinalang', name: 'ballerina-lang', version: "${ballerinaLangVersion}"
     testImplementation group: 'org.ballerinalang', name: 'ballerina-tools-api', version: "${ballerinaLangVersion}"
     testImplementation group: 'org.ballerinalang', name: 'ballerina-parser', version: "${ballerinaLangVersion}"
     testImplementation group: 'org.testng', name: 'testng', version: "${testngVersion}"
-}
-
-tasks.withType(Checkstyle) {
-    exclude '**/module-info.java'
+    testImplementation group: 'com.moandjiezana.toml', name: 'toml4j', version: '0.7.2'
 }
 
 checkstyle {
-    toolVersion "${project.checkstyleToolVersion}"
+    toolVersion "${checkstyleToolVersion}"
     configFile rootProject.file("build-config/checkstyle/build/checkstyle.xml")
     configProperties = ["suppressionFile" : file("${rootDir}/build-config/checkstyle/build/suppressions.xml")]
 }
 
-checkstyleTest.dependsOn(":build-config:checkstyle:downloadMultipleFiles")
+checkstyleMain.dependsOn(":build-config:checkstyle:downloadMultipleFiles")
 
 spotbugsTest {
     effort "max"
