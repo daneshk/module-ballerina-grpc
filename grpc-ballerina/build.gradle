@@ -37,7 +37,7 @@ def distributionBinPath = project.projectDir.absolutePath + "/build/target/extra
 def originalBallerinaToml = ballerinaTomlFile.text
 def originalDependenciesToml = dependenciesTomlFile.text
 def originalCompilerPluginToml = compilerPluginTomlFile.text
-//def testCoverageParam = "--code-coverage --includes=org.ballerinalang.net.grpc.*:ballerina.*"
+def testCoverageParam = "--code-coverage --includes=org.ballerinalang.net.grpc.*:ballerina.*"
 
 configurations {
     jbalTools
@@ -156,7 +156,7 @@ task copyStdlibs(type: Copy) {
     }
 }
 
-task updateTomlVersions {
+task updateTomlFiles {
     doLast {
         def stdlibDependentCryptoVersion = project.stdlibCryptoVersion.replace("-SNAPSHOT", "")
         def stdlibDependentHttpVersion = project.stdlibHttpVersion.replace("-SNAPSHOT", "")
@@ -173,21 +173,21 @@ task updateTomlVersions {
         newBallerinaToml = newBallerinaToml.replace("@netty.version@", stdlibDependentNettyVersion)
         ballerinaTomlFile.text = newBallerinaToml
 
-        def newDependenciesToml =dependenciesTomlFile.text.replace("@stdlib.crypto.version@", stdlibDependentCryptoVersion)
-        newDependenciesToml = newDependenciesToml.replace("@stdlib.http.version@", stdlibDependentHttpVersion)
-        newDependenciesToml = newDependenciesToml.replace("@stdlib.auth.version@", stdlibDependentAuthVersion)
-        newDependenciesToml = newDependenciesToml.replace("@stdlib.jwt.version@", stdlibDependentJwtVersion)
-        newDependenciesToml = newDependenciesToml.replace("@stdlib.oauth2.version@", stdlibDependentOAuth2Version)
-        newDependenciesToml = newDependenciesToml.replace("@stdlib.regex.version@", stdlibDependentRegexVersion)
-        newDependenciesToml = newDependenciesToml.replace("@stdlib.time.version@", stdlibDependentTimeVersion)
-        dependenciesTomlFile.text = newDependenciesToml
+        def newDependencyConfig = dependenciesTomlFile.text.replace("@stdlib.crypto.version@", stdlibDependentCryptoVersion)
+        newDependencyConfig = newDependencyConfig.replace("@stdlib.http.version@", stdlibDependentHttpVersion)
+        newDependencyConfig = newDependencyConfig.replace("@stdlib.auth.version@", stdlibDependentAuthVersion)
+        newDependencyConfig = newDependencyConfig.replace("@stdlib.jwt.version@", stdlibDependentJwtVersion)
+        newDependencyConfig = newDependencyConfig.replace("@stdlib.oauth2.version@", stdlibDependentOAuth2Version)
+        newDependencyConfig = newDependencyConfig.replace("@stdlib.regex.version@", stdlibDependentRegexVersion)
+        newDependencyConfig = newDependencyConfig.replace("@stdlib.time.version@", stdlibDependentTimeVersion)
+        dependenciesTomlFile.text = newDependencyConfig
 
         def newCompilerPluginToml = compilerPluginTomlFile.text.replace("@project.version@", project.version)
         compilerPluginTomlFile.text = newCompilerPluginToml
     }
 }
 
-task revertTomlFile {
+task revertTomlFiles {
     doLast {
         ballerinaTomlFile.text = originalBallerinaToml
         dependenciesTomlFile.text = originalDependenciesToml
@@ -223,11 +223,11 @@ task initializeVariables {
             ballerinaTest.enabled = true
         }
 
-//        if (graph.hasTask(":${packageName}-ballerina:test")) {
-//            testParams = "${testCoverageParam}"
-//        } else {
-//            testParams = "--skip-tests"
-//        }
+        if (graph.hasTask(":${packageName}-ballerina:test")) {
+            testParams = "${testCoverageParam}"
+        } else {
+            testParams = "--skip-tests"
+        }
 
         if (graph.hasTask(":${packageName}-ballerina:publish")) {
             ballerinaPublish.enabled = true
@@ -249,9 +249,9 @@ task ballerinaTest {
             workingDir project.projectDir
             environment "JAVA_OPTS", "-DBALLERINA_DEV_COMPILE_BALLERINA_ORG=true"
             if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-                commandLine 'cmd', '/c', "$balJavaDebugParam $distributionBinPath/bal.bat test ${groupParams} ${disableGroups} ${debugParams} ${certsAndKeys} && exit %%ERRORLEVEL%%"
+                commandLine 'cmd', '/c', "$balJavaDebugParam $distributionBinPath/bal.bat test ${testCoverageParam} ${groupParams} ${disableGroups} ${debugParams} ${certsAndKeys} && exit %%ERRORLEVEL%%"
             } else {
-                commandLine 'sh', '-c', "$balJavaDebugParam $distributionBinPath/bal test ${groupParams} ${disableGroups}${debugParams} ${certsAndKeys}"
+                commandLine 'sh', '-c', "$balJavaDebugParam $distributionBinPath/bal test ${testCoverageParam} ${groupParams} ${disableGroups}${debugParams} ${certsAndKeys}"
             }
         }
     }
@@ -361,27 +361,27 @@ publishing {
 unpackJballerinaTools.dependsOn copyToLib
 unpackStdLibs.dependsOn unpackJballerinaTools
 copyStdlibs.dependsOn unpackStdLibs
-updateTomlVersions.dependsOn copyStdlibs
+updateTomlFiles.dependsOn copyStdlibs
 
-ballerinaTest.finalizedBy revertTomlFile
+ballerinaTest.finalizedBy revertTomlFiles
 ballerinaTest.dependsOn initializeVariables
-ballerinaTest.dependsOn updateTomlVersions
+ballerinaTest.dependsOn updateTomlFiles
 ballerinaTest.dependsOn ":${packageName}-native:build"
 ballerinaTest.dependsOn ":${packageName}-test-utils:build"
 ballerinaTest.dependsOn ":${packageName}-compiler-plugin:build"
 test.dependsOn ballerinaTest
 
 ballerinaBuild.dependsOn test
-ballerinaBuild.finalizedBy revertTomlFile
+ballerinaBuild.finalizedBy revertTomlFiles
 ballerinaBuild.dependsOn initializeVariables
-ballerinaBuild.dependsOn updateTomlVersions
+ballerinaBuild.dependsOn updateTomlFiles
 ballerinaBuild.dependsOn ":${packageName}-native:build"
 ballerinaBuild.dependsOn ":${packageName}-compiler-plugin:build"
 build.dependsOn ballerinaBuild
 
 ballerinaPublish.dependsOn ballerinaBuild
-ballerinaPublish.finalizedBy revertTomlFile
+ballerinaPublish.finalizedBy revertTomlFiles
 ballerinaPublish.dependsOn initializeVariables
-ballerinaPublish.dependsOn updateTomlVersions
+ballerinaPublish.dependsOn updateTomlFiles
 ballerinaPublish.dependsOn ":${packageName}-native:build"
 publish.dependsOn ballerinaPublish
