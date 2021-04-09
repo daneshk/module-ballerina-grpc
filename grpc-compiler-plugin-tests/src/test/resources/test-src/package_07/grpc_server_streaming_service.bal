@@ -15,29 +15,27 @@
 // under the License.
 // This is the server implementation of the server streaming scenario.
 import ballerina/grpc;
-import ballerina/http;
 import ballerina/log;
 
 listener grpc:Listener ep = new (9090);
 
-service / on new http:Listener(9091) {
-
-    resource function get greeting() returns string {
-        return "Hello, World!";
-    }
+@grpc:ServiceDescriptor {
+    descriptor: ROOT_DESCRIPTOR,
+    descMap: getDescriptorMap()
 }
+service "HelloWorld" on new grpc:Listener(9090) {
 
-service "HelloWorld" on ep {
-    remote function lotsOfReplies(string name) returns stream<string, error?>|error {
+    remote function sendReplies(CustomCaller caller, string name) {
         log:printInfo("Server received hello from " + name);
         string[] greets = ["Hi", "Hey", "GM"];
-        // Create the array of responses by appending the received name.
-        int i = 0;
         foreach string greet in greets {
-            greets[i] = greet + " " + name;
-            i += 1;
+            grpc:Error? err = caller->sendString(greet + " " + name);
+            if (err is grpc:Error) {
+                log:printError("Error from Connector: " + err.message());
+            } else {
+                log:printInfo("send reply: " + greet + " " + name);
+            }
         }
-        // Return the stream of strings back to the client.
-        return greets.toStream();
+        checkpanic caller->complete();
     }
 }

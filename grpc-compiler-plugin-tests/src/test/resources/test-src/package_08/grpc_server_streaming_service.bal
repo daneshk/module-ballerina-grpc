@@ -14,20 +14,15 @@
 // specific language governing permissions and limitations
 // under the License.
 // This is the server implementation of the server streaming scenario.
-import ballerina/grpc;
-import ballerina/http;
+import ballerina/grpc as gc;
 import ballerina/log;
 
-listener grpc:Listener ep = new (9090);
 
-service / on new http:Listener(9091) {
-
-    resource function get greeting() returns string {
-        return "Hello, World!";
-    }
+@gc:ServiceDescriptor {
+    descriptor: ROOT_DESCRIPTOR,
+    descMap: getDescriptorMap()
 }
-
-service "HelloWorld" on ep {
+service "HelloWorld" on new gc:Listener(9090) {
     remote function lotsOfReplies(string name) returns stream<string, error?>|error {
         log:printInfo("Server received hello from " + name);
         string[] greets = ["Hi", "Hey", "GM"];
