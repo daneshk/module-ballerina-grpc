@@ -16,47 +16,31 @@
 
 import ballerina/oauth2;
 
-# Represents OAuth2 client credentials grant configurations for OAuth2 authentication.
-public type OAuth2ClientCredentialsGrantConfig record {|
-    *oauth2:ClientCredentialsGrantConfig;
-|};
-
-# Represents OAuth2 password grant configurations for OAuth2 authentication.
-public type OAuth2PasswordGrantConfig record {|
-    *oauth2:PasswordGrantConfig;
-|};
-
-# Represents OAuth2 refresh token grant configurations for OAuth2 authentication.
-public type OAuth2RefreshTokenGrantConfig record {|
-    *oauth2:RefreshTokenGrantConfig;
-|};
-
-# Represents OAuth2 grant configurations for OAuth2 authentication.
-public type OAuth2GrantConfig OAuth2ClientCredentialsGrantConfig|OAuth2PasswordGrantConfig|OAuth2RefreshTokenGrantConfig;
-
 # Defines the OAuth2 handler for client authentication.
-public client class ClientOAuth2Handler {
+public isolated client class ClientOAuth2Handler {
 
-    oauth2:ClientOAuth2Provider provider;
+    private final oauth2:ClientOAuth2Provider provider;
 
-    # Initializes the `grpc:ClientOAuth2Handler` object.
+    # Initializes the OAuth2 handler for client authentication.
     #
-    # + config - The `grpc:OAuth2GrantConfig` instance
+    # + config - OAuth2 refresh token grant configurations
     public isolated function init(OAuth2GrantConfig config) {
-        self.provider = new(config);
+        self.provider = new (config);
     }
 
-    # Enrich the headers with the relevant authentication requirements.
+    # Enriches the headers with the relevant authentication requirements.
     #
-    # + headers - The headers map `map<string|string[]>` as an input
-    # + return - The updated headers map `map<string|string[]>` instance or else an `grpc:ClientAuthError` in case of an error
+    # + headers - The `map<string|string[]>` headers map  as an input
+    # + return - The updated `map<string|string[]>` headers map  instance or else a `grpc:ClientAuthError` in case of
+    # an error
     remote isolated function enrich(map<string|string[]> headers) returns map<string|string[]>|ClientAuthError {
         string|oauth2:Error result = self.provider.generateToken();
-        if (result is oauth2:Error) {
+        if (result is string) {
+            string token = AUTH_SCHEME_BEARER + " " + result;
+            headers[AUTH_HEADER] = [token];
+            return headers;
+        } else {
             return prepareClientAuthError("Failed to enrich request with OAuth2 token.", result);
         }
-        string token = AUTH_SCHEME_BEARER + " " + checkpanic result;
-        headers[AUTH_HEADER] = [token];
-        return headers;
     }
 }

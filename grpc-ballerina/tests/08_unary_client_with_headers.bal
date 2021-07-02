@@ -53,50 +53,6 @@ function testHeadersInBlockingClient() returns Error? {
         map<string|string[]> resHeaders = unionResp.headers;
         io:println("Client Got Response : ");
         io:println(result);
-        test:assertEquals(check getHeader(resHeaders, "x-id"), "2233445677");
+        test:assertEquals(check getHeaders(resHeaders, "x-id"), ["0987654321","1234567890","2233445677"]);
     }
-}
-
-// Blocking endpoint.
-public client class HelloWorld101Client {
-
-    *AbstractClientEndpoint;
-
-    private Client grpcClient;
-
-    public isolated function init(string url, *ClientConfiguration config) returns Error? {
-        // initialize client endpoint.
-        self.grpcClient = check new(url, config);
-        check self.grpcClient.initStub(self, ROOT_DESCRIPTOR_8, getDescriptorMap8());
-    }
-
-    isolated remote function hello(string|ContextString req) returns (string|Error) {
-        
-        map<string|string[]> headers = {};
-        string message;
-        if (req is ContextString) {
-            message = req.content;
-            headers = req.headers;
-        } else {
-            message = req;
-        }
-        var payload = check self.grpcClient->executeSimpleRPC("HelloWorld101/hello", message, headers);
-        [anydata, map<string|string[]>][result, _] = payload;
-        return result.toString();
-    }
-    isolated remote function helloContext(string|ContextString req) returns (ContextString|Error) {
-        
-        map<string|string[]> headers = {};
-        string message;
-        if (req is ContextString) {
-            message = req.content;
-            headers = req.headers;
-        } else {
-            message = req;
-        }
-        var payload = check self.grpcClient->executeSimpleRPC("HelloWorld101/hello", message, headers);
-        [anydata, map<string|string[]>][result, respHeaders] = payload;
-        return {content: result.toString(), headers: respHeaders};
-    }
-
 }

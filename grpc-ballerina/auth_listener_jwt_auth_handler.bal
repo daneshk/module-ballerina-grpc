@@ -16,26 +16,18 @@
 
 import ballerina/jwt;
 
-# Represents JWT validator configurations for JWT authentication.
-#
-# + scopeKey - The key used to fetch the scopes
-public type JwtValidatorConfig record {|
-    *jwt:ValidatorConfig;
-    string scopeKey = "scope";
-|};
-
 # Defines the JWT auth handler for listener authentication.
-public class ListenerJwtAuthHandler {
+public isolated class ListenerJwtAuthHandler {
 
-    jwt:ListenerJwtAuthProvider provider;
-    string scopeKey;
+    private final jwt:ListenerJwtAuthProvider provider;
+    private final string & readonly scopeKey;
 
-    # Initializes the `grpc:ListenerJwtAuthHandler` object.
+    # Initializes the JWT auth handler for the listener authentication.
     #
-    # + config - The `grpc:JwtValidatorConfig` instance
+    # + config - JWT validator configurations
     public isolated function init(JwtValidatorConfig config) {
-        self.scopeKey = config.scopeKey;
-        self.provider = new(config);
+        self.scopeKey = config.scopeKey.cloneReadOnly();
+        self.provider = new (config);
     }
 
     # Authenticates with the relevant authentication requirements.
@@ -48,10 +40,11 @@ public class ListenerJwtAuthHandler {
             return error UnauthenticatedError(credential.message());
         } else {
             jwt:Payload|jwt:Error details = self.provider.authenticate(credential);
-            if (details is jwt:Error) {
+            if (details is jwt:Payload) {
+                return details;
+            } else {
                 return error UnauthenticatedError(details.message());
             }
-            return checkpanic details;
         }
     }
 

@@ -20,7 +20,7 @@ import ballerina/test;
 @test:Config {enable:true}
 isolated function testClientStreamingFromReturnRecord() returns Error? {
     HelloWorld33Client helloWorldEp = check new ("http://localhost:9123");
-    SayHelloStreamingClientFromReturn streamingClient;
+    SayHelloStreamingClient streamingClient;
     var res = helloWorldEp->sayHello();
     if (res is Error) {
         test:assertFail("Error from Connector: " + res.message());
@@ -41,7 +41,7 @@ isolated function testClientStreamingFromReturnRecord() returns Error? {
             test:assertFail("Error from Connector: " + err.message());
         }
     }
-    checkpanic streamingClient->complete();
+    check streamingClient->complete();
     io:println("Completed successfully");
     var response = check streamingClient->receiveContextSampleMsg33();
     if response is ContextSampleMsg33 {
@@ -49,66 +49,25 @@ isolated function testClientStreamingFromReturnRecord() returns Error? {
     }
 }
 
-public client class SayHelloStreamingClientFromReturn {
-    private StreamingClient sClient;
-
-    isolated function init(StreamingClient sClient) {
-        self.sClient = sClient;
+@test:Config {enable:true}
+isolated function testClientStreamingSendError() returns Error? {
+    HelloWorld33Client helloWorldEp = check new ("http://localhost:9123");
+    SayHelloStreamingClient streamingClient;
+    var res = helloWorldEp->sayHello();
+    if (res is Error) {
+        test:assertFail("Error from Connector: " + res.message());
+        return;
+    } else {
+        streamingClient = res;
     }
+    io:println("Initialized connection sucessfully.");
 
-    isolated remote function sendSampleMsg33(SampleMsg33 message) returns Error? {
-
-        return self.sClient->send(message);
-    }
-
-    isolated remote function sendContextSampleMsg33(ContextSampleMsg33 message) returns Error? {
-        return self.sClient->send(message);
-    }
-
-    isolated remote function receiveSampleMsg33() returns SampleMsg33|Error? {
-        var response = check self.sClient->receive();
-        if (response is ()) {
-            return ();
-        } else {
-            [anydata, map<string|string[]>] [result, headers] = response;
-            return <SampleMsg33>result;
-        }
-    }
-
-    isolated remote function receiveContextSampleMsg33() returns ContextSampleMsg33|Error? {
-        var response = check self.sClient->receive();
-        if (response is ()) {
-            return response;
-        } else {
-            [anydata, map<string|string[]>] [result, headers] = response;
-            return {content: <SampleMsg33>result, headers: headers};
-        }
-
-    }
-
-    isolated remote function sendError(Error response) returns Error? {
-        return self.sClient->sendError(response);
-    }
-
-    isolated remote function complete() returns Error? {
-        return self.sClient->complete();
-    }
-}
-
-public client class HelloWorld33Client {
-
-    *AbstractClientEndpoint;
-
-    private Client grpcClient;
-
-    public isolated function init(string url, *ClientConfiguration config) returns Error? {
-        // initialize client endpoint.
-        self.grpcClient = check new(url, config);
-        check self.grpcClient.initStub(self, ROOT_DESCRIPTOR_33, getDescriptorMap33());
-    }
-
-    isolated remote function sayHello() returns (SayHelloStreamingClientFromReturn|Error) {
-        StreamingClient sClient = check self.grpcClient->executeClientStreaming("HelloWorld33/sayHello");
-        return new SayHelloStreamingClientFromReturn(sClient);
+    Error? err1 = streamingClient->sendSampleMsg33({name: "WSO2", id: 0});
+    Error? err2 = streamingClient->sendError(error UnKnownError("Unknown gRPC error occured."));
+    Error? err3 = streamingClient->complete();
+    if err3 is Error {
+        test:assertEquals(err3.message(), "Client call was cancelled.");
+    } else {
+        test:assertFail("Expected grpc:Error not found");
     }
 }

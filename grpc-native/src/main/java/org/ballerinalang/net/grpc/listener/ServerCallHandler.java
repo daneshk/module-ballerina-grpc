@@ -223,6 +223,10 @@ public abstract class ServerCallHandler {
                     signatureParams.get(signatureParamSize - 1).getName().contains("Stream")) {
                 contentContext = ValueCreator.createRecordValue(resource.getService().getType().getPackage(),
                         getContextStreamTypeName(resource.getRpcInputType()), valueMap);
+            } else if (signatureParamSize > 1 && (signatureParams.get(1).getTag() == TypeTags.RECORD_TYPE_TAG) &&
+                    signatureParams.get(signatureParamSize - 1).getName().contains("Stream")) {
+                contentContext = ValueCreator.createRecordValue(resource.getService().getType().getPackage(),
+                        getContextStreamTypeName(resource.getRpcInputType()), valueMap);
             } else {
                 contentContext = ValueCreator.createRecordValue(resource.getService().getType().getPackage(),
                         getContextTypeName(resource.getRpcInputType()), valueMap);

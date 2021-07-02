@@ -29,8 +29,12 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.ballerinalang.net.grpc.Message;
 import org.ballerinalang.net.grpc.StreamObserver;
+import org.ballerinalang.net.grpc.listener.ServerCallHandler;
 
 import static io.ballerina.runtime.observability.ObservabilityConstants.PROPERTY_KEY_HTTP_STATUS_CODE;
+import static org.ballerinalang.net.grpc.GrpcConstants.CONTENT_FIELD;
+import static org.ballerinalang.net.grpc.GrpcConstants.EMPTY_DATATYPE_NAME;
+import static org.ballerinalang.net.grpc.GrpcConstants.HEADER_FIELD;
 import static org.ballerinalang.net.grpc.MessageUtils.convertToHttpHeaders;
 import static org.ballerinalang.net.grpc.MessageUtils.isContextRecordByValue;
 import static org.ballerinalang.net.grpc.MessageUtils.isRecordMapValue;
@@ -44,14 +48,16 @@ public class StreamingCallableUnitCallBack extends AbstractCallableUnitCallBack 
 
     private Runtime runtime;
     private StreamObserver responseSender;
+    private boolean emptyResponse;
     private Descriptors.Descriptor outputType;
     private ObserverContext observerContext;
 
-    public StreamingCallableUnitCallBack(Runtime runtime, StreamObserver responseSender,
+    public StreamingCallableUnitCallBack(Runtime runtime, StreamObserver responseSender, boolean isEmptyResponse,
                                          Descriptors.Descriptor outputType, ObserverContext context) {
         available.acquireUninterruptibly();
         this.runtime = runtime;
         this.responseSender = responseSender;
+        this.emptyResponse = isEmptyResponse;
         this.observerContext = context;
         this.outputType = outputType;
     }
@@ -59,11 +65,31 @@ public class StreamingCallableUnitCallBack extends AbstractCallableUnitCallBack 
     @Override
     public void notifySuccess(Object response) {
         super.notifySuccess(response);
+        // check whether connection is closed.
+        if (responseSender instanceof ServerCallHandler.ServerCallStreamObserver) {
+            ServerCallHandler.ServerCallStreamObserver serverCallStreamObserver = (ServerCallHandler
+                    .ServerCallStreamObserver) responseSender;
+            if (!serverCallStreamObserver.isReady()) {
+                return;
+            }
+            if (serverCallStreamObserver.isCancelled()) {
+                return;
+            }
+        }
+        if (response instanceof BError) {
+            handleFailure(responseSender, (BError) response);
+            if (observerContext != null) {
+                observerContext.addProperty(PROPERTY_KEY_HTTP_STATUS_CODE,
+                        HttpResponseStatus.INTERNAL_SERVER_ERROR.code());
+            }
+            return;
+        }
+
         Object content;
         BMap headerValues = null;
         if (isContextRecordByValue(response)) {
-            content = ((BMap) response).get(StringUtils.fromString("content"));
-            headerValues = ((BMap) response).getMapValue(StringUtils.fromString("headers"));
+            content = ((BMap) response).get(StringUtils.fromString(CONTENT_FIELD));
+            headerValues = ((BMap) response).getMapValue(StringUtils.fromString(HEADER_FIELD));
         } else {
             content = response;
         }
@@ -71,15 +97,25 @@ public class StreamingCallableUnitCallBack extends AbstractCallableUnitCallBack 
         HttpHeaders headers = convertToHttpHeaders(headerValues);
 
         if (content instanceof BStream) {
-            BObject bObject = (BObject) ((BStream) content).getIteratorObj();
+            BObject bObject = ((BStream) content).getIteratorObj();
             ReturnStreamUnitCallBack returnStreamUnitCallBack = new ReturnStreamUnitCallBack(
                     runtime, responseSender, outputType, bObject, headers);
             runtime.invokeMethodAsync(bObject, "next", null, null, returnStreamUnitCallBack);
         } else {
-            //Message responseMessage = MessageUtils.generateProtoMessage(responseValue, outputType);
-            Message responseMessage = new Message(outputType.getName(), content);
-            responseMessage.setHeaders(headers);
-            responseSender.onNext(responseMessage);
+            // If content is null and remote function doesn't return empty response means. response is already sent
+            // to client via caller object, but connection is not closed already by calling complete function.
+            // Hence closing the connection.
+            if (content == null) {
+                if (this.emptyResponse) {
+                    Message responseMessage = new Message(EMPTY_DATATYPE_NAME, null);
+                    responseMessage.setHeaders(headers);
+                    responseSender.onNext(responseMessage);
+                }
+            } else {
+                Message responseMessage = new Message(outputType.getName(), content);
+                responseMessage.setHeaders(headers);
+                responseSender.onNext(responseMessage);
+            }
             responseSender.onCompleted();
         }
     }

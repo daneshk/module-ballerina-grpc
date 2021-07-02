@@ -99,6 +99,25 @@ public class OutboundMessage {
     }
 
     /**
+     * Add a iterable headers list to the response.
+     *
+     * @param headers headers to be added to the response
+     */
+    public void setHeaders(HttpHeaders headers) {
+        responseMessage.setHeaders(headers);
+    }
+
+    /**
+     * Add a set of headers to the response.
+     *
+     * @param httpHeaders set of headers that needs to be set.
+     */
+    public void addHeaders(HttpHeaders httpHeaders) {
+
+        responseMessage.addHeaders(httpHeaders);
+    }
+
+    /**
      * Get a property of the CarbonMessage.
      *
      * @param key Property key

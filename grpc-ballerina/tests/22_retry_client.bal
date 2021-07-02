@@ -14,7 +14,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/io;
 import ballerina/test;
 
 RetryConfiguration retryConfig = {
@@ -24,10 +23,6 @@ RetryConfiguration retryConfig = {
     backoffFactor: 2,
     errorTypes: [UnavailableError, InternalError]
 };
-ClientConfiguration clientConfig = {
-    timeout: 1,
-    retryConfiguration: retryConfig
-};
 
 RetryConfiguration failingRetryConfig = {
     retryCount: 2,
@@ -36,19 +31,21 @@ RetryConfiguration failingRetryConfig = {
     backoffFactor: 2,
     errorTypes: [UnavailableError, InternalError]
 };
-ClientConfiguration failingClientConfig = {
-    timeout: 1,
-    retryConfiguration: failingRetryConfig
-};
 
 final RetryServiceClient retryClient = check new("http://localhost:9112", timeout = 1, retryConfiguration = retryConfig);
 final RetryServiceClient failingRetryClient = check new("http://localhost:9112", timeout = 1, retryConfiguration = failingRetryConfig);
 
 @test:Config {enable:true}
 function testRetry() {
-    var result = retryClient->getResult("RetryClient");
+    var result = retryClient->getResult("UnavailableError");
     if (result is Error) {
-        io:println(result);
+        test:assertFail(result.toString());
+    } else {
+        test:assertEquals(result, "Total Attempts: 4");
+    }
+
+    result = retryClient->getResult("InternalError");
+    if (result is Error) {
         test:assertFail(result.toString());
     } else {
         test:assertEquals(result, "Total Attempts: 4");
@@ -59,51 +56,8 @@ function testRetry() {
 function testRetryFailingClient() {
     var result = failingRetryClient->getResult("FailingRetryClient");
     if (result is Error) {
-        io:println(result);
         test:assertEquals(result.message(), "Maximum retry attempts completed without getting a result");
     } else {
         test:assertFail(result);
     }
-}
-
-public client class RetryServiceClient {
-
-    *AbstractClientEndpoint;
-
-    private Client grpcClient;
-
-    public isolated function init(string url, *ClientConfiguration config) returns Error? {
-        self.grpcClient = check new(url, config);
-        check self.grpcClient.initStub(self, ROOT_DESCRIPTOR_22, getDescriptorMap22());
-    }
-
-    isolated remote function getResult(string|ContextString req) returns (string|Error) {
-
-        map<string|string[]> headers = {};
-        string message;
-        if (req is ContextString) {
-            message = req.content;
-            headers = req.headers;
-        } else {
-            message = req;
-        }
-        var payload = check self.grpcClient->executeSimpleRPC("RetryService/getResult", message, headers);
-        [anydata, map<string|string[]>][result, _] = payload;
-        return result.toString();
-    }
-    isolated remote function getResultContext(string|ContextString req) returns (ContextString|Error) {
-
-        map<string|string[]> headers = {};
-        string message;
-        if (req is ContextString) {
-            message = req.content;
-            headers = req.headers;
-        } else {
-            message = req;
-        }
-        var payload = check self.grpcClient->executeSimpleRPC("RetryService/getResult", message, headers);
-        [anydata, map<string|string[]>][result, respHeaders] = payload;
-        return {content: result.toString(), headers: respHeaders};
-    }
-
 }

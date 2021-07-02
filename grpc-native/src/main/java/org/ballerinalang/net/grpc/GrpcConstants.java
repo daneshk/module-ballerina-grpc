@@ -61,6 +61,7 @@ public class GrpcConstants {
     public static final String COMPLETED_MESSAGE = "completedMessage";
     public static final String ERROR_MESSAGE = "errorMessage";
     public static final String ITERATOR_OBJECT_NAME = "StreamIterator";
+    public static final String ITERATOR_OBJECT_ENTRY = "streamIterator";
 
     // Service Descriptor Annotation
     public static final String DESCRIPTOR_MAP = "getDescriptorMap";
@@ -77,6 +78,8 @@ public class GrpcConstants {
     public static final String CLIENT_CONNECTOR = "ClientConnector";
     public static final String ENDPOINT_URL = "url";
     public static final String MESSAGE_HEADERS = "MessageHeaders";
+    public static final String RECEIVE_ENTRY = "receive";
+    public static final String CONTEXT_ENTRY = "context";
 
     public static final String SERVICE_STUB = "Stub";
     public static final String METHOD_DESCRIPTORS = "MethodDescriptors";
@@ -273,4 +276,8 @@ public class GrpcConstants {
 
     public static final BString SECURESOCKET_CONFIG_CERT_VALIDATION_TYPE_OCSP_STAPLING =
             StringUtils.fromString("OCSP_STAPLING");
+
+    //context message field name constants
+    public static final String CONTENT_FIELD = "content";
+    public static final String HEADER_FIELD = "headers";
 }

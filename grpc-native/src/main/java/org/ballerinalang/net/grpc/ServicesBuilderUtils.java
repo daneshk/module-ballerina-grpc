@@ -39,7 +39,6 @@ import org.ballerinalang.net.grpc.exception.GrpcServerException;
 import org.ballerinalang.net.grpc.listener.ServerCallHandler;
 import org.ballerinalang.net.grpc.listener.StreamingServerCallHandler;
 import org.ballerinalang.net.grpc.listener.UnaryServerCallHandler;
-import org.ballerinalang.net.grpc.proto.definition.StandardDescriptorBuilder;
 
 import java.io.IOException;
 
@@ -63,9 +62,8 @@ import static org.ballerinalang.net.grpc.MessageUtils.setNestedMessages;
  */
 public class ServicesBuilderUtils {
 
-    public static ServerServiceDefinition getServiceDefinition(Runtime runtime, BObject service,
-                                                               Object servicePath, Object annotationData) throws
-            GrpcServerException {
+    public static ServerServiceDefinition getServiceDefinition(Runtime runtime, BObject service, Object servicePath,
+                                                               Object annotationData) throws GrpcServerException {
 
         Descriptors.FileDescriptor fileDescriptor = getDescriptor(annotationData);
         if (fileDescriptor == null) {
@@ -333,7 +331,12 @@ public class ServicesBuilderUtils {
             return ((StreamType) inputType).getConstrainedType();
         } else if (inputType instanceof RecordType && inputType.getName().startsWith("Context") &&
                 ((RecordType) inputType).getFields().size() == 2) {
-            return ((RecordType) inputType).getFields().get("content").getFieldType();
+            Type contentType = ((RecordType) inputType).getFields().get("content").getFieldType();
+
+            if (contentType instanceof StreamType) {
+                return ((StreamType) contentType).getConstrainedType();
+            }
+            return contentType;
         } else {
             return inputType;
         }

@@ -24,6 +24,7 @@ import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
+import org.ballerinalang.net.grpc.GrpcConstants;
 import org.ballerinalang.net.grpc.Message;
 import org.ballerinalang.net.grpc.MessageUtils;
 import org.ballerinalang.net.grpc.ServerConnectorListener;
@@ -52,6 +53,7 @@ import static org.ballerinalang.net.grpc.GrpcConstants.MESSAGE_QUEUE;
 import static org.ballerinalang.net.grpc.GrpcConstants.SERVER_CONNECTOR;
 import static org.ballerinalang.net.grpc.GrpcConstants.SERVICE_REGISTRY_BUILDER;
 import static org.ballerinalang.net.grpc.GrpcUtil.getListenerConfig;
+import static org.ballerinalang.net.grpc.MessageUtils.createHeaderMap;
 import static org.ballerinalang.net.grpc.nativeimpl.caller.FunctionUtils.externComplete;
 import static org.ballerinalang.net.http.HttpConstants.ENDPOINT_CONFIG_PORT;
 
@@ -64,6 +66,9 @@ import static org.ballerinalang.net.http.HttpConstants.ENDPOINT_CONFIG_PORT;
 public class FunctionUtils  extends AbstractGrpcNativeFunction  {
 
     private static final Logger LOG = LoggerFactory.getLogger(FunctionUtils.class);
+
+    private FunctionUtils() {
+    }
 
     /**
      * Extern function to initialize gRPC service listener.
@@ -114,8 +119,8 @@ public class FunctionUtils  extends AbstractGrpcNativeFunction  {
             }
         } catch (GrpcServerException e) {
             return MessageUtils.getConnectorError(new StatusRuntimeException(Status
-                    .fromCode(Status.Code.INTERNAL.toStatus().getCode()).withDescription("Error when " +
-                            "initializing service register builder. " + e.getLocalizedMessage())));
+                    .fromCode(Status.Code.INTERNAL.toStatus().getCode()).withDescription("Error while registering " +
+                     "the service. " + e.getLocalizedMessage())));
         }
     }
 
@@ -144,7 +149,15 @@ public class FunctionUtils  extends AbstractGrpcNativeFunction  {
      * @return Error if there is an error while starting the server, else returns nil.
      */
     public static Object externStart(BObject listener) {
+
         ServicesRegistry.Builder servicesRegistryBuilder = getServiceRegistryBuilder(listener);
+
+        if (servicesRegistryBuilder.getServices().isEmpty()) {
+            long port = listener.getIntValue(StringUtils.fromString("port"));
+            LOG.warn("The listener start is terminated because no attached services found in the " +
+                    "listener with port {}", port);
+            return null;
+        }
 
         if (!isConnectorStarted(listener)) {
             return startServerConnector(listener, servicesRegistryBuilder.build());
@@ -168,6 +181,9 @@ public class FunctionUtils  extends AbstractGrpcNativeFunction  {
         BlockingQueue<?> messageQueue = (BlockingQueue<?>) streamIterator.getNativeData(MESSAGE_QUEUE);
         try {
             Message nextMessage = (Message) messageQueue.take();
+            if (nextMessage.getHeaders() != null) {
+                streamIterator.addNativeData(GrpcConstants.HEADERS, createHeaderMap(nextMessage.getHeaders()));
+            }
             if (nextMessage.isError()) {
                 return MessageUtils.getConnectorError(nextMessage.getError());
             } else {

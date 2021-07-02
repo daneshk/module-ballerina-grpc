@@ -16,34 +16,30 @@
 
 import ballerina/auth;
 
-# Represents credentials for Basic Auth authentication.
-public type CredentialsConfig record {|
-    *auth:CredentialsConfig;
-|};
-
 # Defines the Basic Auth handler for client authentication.
-public class ClientBasicAuthHandler {
+public isolated class ClientBasicAuthHandler {
 
-    auth:ClientBasicAuthProvider provider;
+    private final auth:ClientBasicAuthProvider provider;
 
-    # Initializes the `http:ClientBasicAuthHandler` object.
+    # Initializes the Basic Auth handler for client authentication.
     #
-    # + config - The `http:CredentialsConfig` instance
+    # + config - The Basic Auth credentials
     public isolated function init(CredentialsConfig config) {
-        self.provider = new(config);
+        self.provider = new (config);
     }
 
-    # Enrich the headers with the relevant authentication requirements.
+    # Enriches the headers with the relevant authentication requirements.
     #
-    # + headers - The headers map `map<string|string[]>` as an input
-    # + return - The updated headers map `map<string|string[]>` instance or else an `grpc:ClientAuthError` in case of an error
+    # + headers - The `map<string|string[]>` headers map  as an input
+    # + return - The updated `map<string|string[]>` headers map  instance or else a `grpc:ClientAuthError` in case of an error
     public isolated function enrich(map<string|string[]> headers) returns map<string|string[]>|ClientAuthError {
         string|auth:Error result = self.provider.generateToken();
-        if (result is auth:Error) {
+        if (result is string) {
+            string token = AUTH_SCHEME_BASIC + " " + result;
+            headers[AUTH_HEADER] = [token];
+            return headers;
+        } else {
             return prepareClientAuthError("Failed to enrich request with Basic Auth token.", result);
         }
-        string token = AUTH_SCHEME_BASIC + " " + checkpanic result;
-        headers[AUTH_HEADER] = [token];
-        return headers;
     }
 }

@@ -126,6 +126,14 @@ public final class ClientCall {
         }
     }
 
+    public void injectHeaders(HttpHeaders headers) {
+        if (this.outboundMessage != null) {
+            if (headers != null) {
+                headers.forEach(entry -> this.outboundMessage.setHeader(entry.getKey(), entry.getValue()));
+            }
+        }
+    }
+
     /**
      * Start a call, using {@code responseListener} for processing response messages.
      *
@@ -206,7 +214,7 @@ public final class ClientCall {
             throw new IllegalStateException("Client call did not start properly.");
         }
         if (cancelCalled) {
-            throw new IllegalStateException("Client call was called.");
+            throw new IllegalStateException("Client call was cancelled.");
         }
         if (halfCloseCalled) {
             throw new IllegalStateException("Client call was already closed.");

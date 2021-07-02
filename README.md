@@ -1,7 +1,7 @@
 Ballerina gRPC Library
 ===================
 
-  [![Build](https://github.com/ballerina-platform/module-ballerina-grpc/workflows/Build/badge.svg)](https://github.com/ballerina-platform/module-ballerina-grpc/actions?query=workflow%3ABuild)
+  [![Build](https://github.com/ballerina-platform/module-ballerina-grpc/actions/workflows/build-timestamped-master.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerina-grpc/actions/workflows/build-timestamped-master.yml)
   [![GitHub Last Commit](https://img.shields.io/github/last-commit/ballerina-platform/module-ballerina-grpc.svg)](https://github.com/ballerina-platform/module-ballerina-grpc/commits/master)
   [![Github issues](https://img.shields.io/github/issues/ballerina-platform/ballerina-standard-library/module/grpc.svg?label=Open%20Issues)](https://github.com/ballerina-platform/ballerina-standard-library/labels/module%2Fgrpc)
   [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -9,16 +9,16 @@ Ballerina gRPC Library
 
 The gRPC library is one of the standard library modules of the<a target="_blank" href="https://ballerina.io/"> Ballerina</a> language.
 
-This provides support for the gRPC messaging protocol. gRPC is an inter-process communication technology that allows you to connect, invoke and operate distributed heterogeneous applications as easily as making a local function call. The gRPC protocol is layered over HTTP/2 and It uses Protocol Buffers for marshaling/unmarshaling messages. This makes gRPC, highly efficient on wire and a simple service definition framework.
+This provides support for the gRPC messaging protocol. gRPC is an inter-process communication technology that allows you to connect, invoke, and operate distributed, heterogeneous applications as easily as making a local function call. The gRPC protocol is layered over HTTP/2 and uses Protocol Buffers for marshaling/unmarshaling messages. This makes gRPC highly efficient on wire and a simple service definition framework.
 
-This Library supports below messaging patterns. For more information on the operations supported, go to [The gRPC Module](https://ballerina.io/swan-lake/learn/api-docs/ballerina/grpc/).
+This Library supports the messaging patterns below. For more information on the supported operations, go to the [`grpc` module](https://docs.central.ballerina.io/ballerina/grpc/latest).
 
 - Simple RPC (Unary RPC)
 - Server streaming RPC
 - Client streaming RPC
 - Bidirectional Streaming RPC
 
-For example demonstrations of the usage, go to [Ballerina By Examples](https://ballerina.io/swan-lake/learn/by-example).
+For example demonstrations of the usage, go to [Ballerina By Examples](https://ballerina.io/learn/by-example/).
 
 ## Issues and Projects
 
@@ -46,23 +46,33 @@ Execute the commands below to build from source.
         
         ./gradlew clean build
 
-1. To run the integration tests:
+2. To run the integration tests:
 
         ./gradlew clean test
 
-1. To build the module without the tests:
+3. To build the module without the tests:
 
         ./gradlew clean build -x test
 
-1. To debug the Ballerina implementation against the native implementation:
+5. To debug the Ballerina implementation against the native implementation:
    ```
    ./gradlew clean build -Pdebug=<port>
    ./gradlew clean test -Pdebug=<port>
    ```
-1. To debug the Ballerina implementation against the Ballerina language:
+
+6. To debug the Ballerina implementation against the Ballerina language:
    ```
    ./gradlew clean build -PbalJavaDebug=<port>
    ./gradlew clean test -PbalJavaDebug=<port>
+   ```
+
+7. Publish the generated artifacts to the local Ballerina central repository:
+    ```
+    ./gradlew clean build -PpublishToLocalCentral=true
+    ```
+8. Publish the generated artifacts to the Ballerina central repository:
+   ```
+   ./gradlew clean build -PpublishToCentral=true
    ```
 
 ## Contributing to Ballerina

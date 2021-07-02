@@ -39,7 +39,10 @@ import static org.ballerinalang.net.grpc.protobuf.BalGenerationConstants.EMPTY_S
  */
 public class BalFileGenerationUtils {
     private static final Logger LOG = LoggerFactory.getLogger(BalFileGenerationUtils.class);
-    
+
+    private BalFileGenerationUtils() {
+    }
+
     /**
      * Execute command and generate file descriptor.
      *
@@ -96,7 +99,18 @@ public class BalFileGenerationUtils {
         if (idx > 0) {
             protoFolderPath = protoPath.substring(0, idx);
         }
-        return protoFolderPath;
+        return protoFolderPath.trim();
+    }
+
+    /**
+     * Enclose path by double quotations to escape from empty spaces in the path.
+     *
+     * @param path Any file path or a directory path
+     * @return Same given path that enclosed by double quotations.
+     */
+    public static String escapeSpaces(String path) {
+
+        return "\"" + path + "\"";
     }
     
     /**

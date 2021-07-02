@@ -23,6 +23,10 @@ import java.io.File;
  * Bal Generation Tool contants class.
  */
 public class BalGenerationConstants {
+
+    private BalGenerationConstants() {
+    }
+
     public static final String OS_NAME_SYSTEM_PROPERTY = "os.name";
     public static final String OS_ARCH_SYSTEM_PROPERTY = "os.arch";
     public static final String FILE_SEPARATOR = File.separator;
@@ -44,4 +48,5 @@ public class BalGenerationConstants {
     public static final String DESC_SUFFIX = ".desc";
     public static final String PROTOC_PLUGIN_EXE_URL_SUFFIX = "https://repo1.maven.org/maven2/com/google/" +
             "protobuf/protoc/";
+    public static final String TMP_DIRECTORY_PATH = System.getProperty("java.io.tmpdir");
 }

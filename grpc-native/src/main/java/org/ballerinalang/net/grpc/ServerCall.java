@@ -27,7 +27,6 @@ import org.ballerinalang.net.transport.contract.exceptions.ServerConnectorExcept
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.ballerinalang.net.grpc.GrpcConstants.MESSAGE_ENCODING;
@@ -105,13 +104,9 @@ public final class ServerCall {
         outboundMessage.framer().setCompressor(compressor);
         outboundMessage.removeHeader(MESSAGE_ACCEPT_ENCODING);
         String advertisedEncodings = String.join(",", decompressorRegistry.getAdvertisedMessageEncodings());
-        if (advertisedEncodings != null) {
-            outboundMessage.setHeader(MESSAGE_ACCEPT_ENCODING, advertisedEncodings);
-        }
+        outboundMessage.setHeader(MESSAGE_ACCEPT_ENCODING, advertisedEncodings);
         if (headers != null) {
-            for (Map.Entry<String, String> headerEntry : headers.entries()) {
-                outboundMessage.setHeader(headerEntry.getKey(), headerEntry.getValue());
-            }
+            outboundMessage.addHeaders(headers);
         }
         try {
             // Send response headers.
@@ -229,7 +224,7 @@ public final class ServerCall {
                 return;
             }
             try {
-                Message request = call.method.parseRequest(message);
+                Message request = call.method.parseRequest(message); // place
                 request.setHeaders(call.inboundMessage.getHeaders());
                 listener.onMessage(request);
             } catch (StatusRuntimeException ex) {
